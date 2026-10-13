@@ -1,0 +1,634 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#078bc8">
+  <title>BINGO.exe</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #173650;
+      --muted: #627687;
+      --paper: #078bc8;
+      --card: #fff9e9;
+      --line: #f0d69b;
+      --purple: #d93631;
+      --purple-dark: #a92027;
+      --lime: #ffe18a;
+      --shadow: 0 16px 42px rgba(6, 47, 83, .23);
+    }
+
+    * { box-sizing: border-box; }
+    html, body { width: 100%; height: 100%; overflow: hidden; }
+    body {
+      margin: 0;
+      min-width: 320px;
+      background:
+        radial-gradient(ellipse at 7% 15%, rgba(160, 226, 255, .6), transparent 25rem),
+        radial-gradient(ellipse at 89% 17%, rgba(255, 211, 94, .48), transparent 26rem),
+        radial-gradient(ellipse at 50% 100%, rgba(0, 56, 105, .3), transparent 35rem),
+        repeating-conic-gradient(from -12deg at 50% -38%, rgba(255,255,255,.1) 0deg 7deg, transparent 7deg 16deg),
+        var(--paper);
+      color: var(--ink);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    body::before, body::after { position: fixed; z-index: 0; left: 0; width: 100%; pointer-events: none; content: ""; }
+    body::before {
+      top: 0; height: 48px;
+      background: radial-gradient(circle, #ffe18a 0 2px, transparent 3px) 0 0 / 32px 48px repeat-x;
+      opacity: .95;
+    }
+    body::after {
+      bottom: 0; height: 18px;
+      background: repeating-linear-gradient(115deg, #d93631 0 22px, #ffdc72 22px 32px, #117db3 32px 54px, #ffdc72 54px 64px);
+      clip-path: polygon(0 0, 100% 0, 100% 55%, 94% 100%, 88% 55%, 82% 100%, 76% 55%, 70% 100%, 64% 55%, 58% 100%, 52% 55%, 46% 100%, 40% 55%, 34% 100%, 28% 55%, 22% 100%, 16% 55%, 10% 100%, 4% 55%, 0 100%);
+      opacity: .9;
+    }
+
+    button, input { font: inherit; }
+    button { color: inherit; }
+    .page {
+      position: relative; z-index: 1; display: flex; width: min(100%, 1280px); height: 100%; min-height: 0;
+      flex-direction: column; gap: 10px; margin: 0 auto; padding: 12px 28px 10px;
+    }
+    .topbar { display: flex; flex: 0 0 auto; align-items: center; justify-content: space-between; gap: 20px; }
+    .top-actions { display: flex; align-items: center; gap: 9px; }
+    .history-toggle, .history-close { display: none; }
+    .brand { display: flex; align-items: center; gap: 12px; }
+    .brand-mark {
+      display: grid; width: 42px; height: 42px; place-items: center; border-radius: 14px;
+      background: linear-gradient(145deg, #d93631, #ffba3d); color: #fff7d9; font-size: 16px; font-weight: 900; letter-spacing: -1px;
+      box-shadow: 0 5px 14px rgba(109, 39, 30, .25);
+    }
+    .brand-name { font-size: 18px; font-weight: 900; letter-spacing: -.7px; }
+    .brand-sub { margin-top: 2px; color: var(--muted); font-size: 10px; font-weight: 750; letter-spacing: 1.25px; text-transform: uppercase; }
+    .stats { display: grid; grid-template-columns: 1fr; gap: 9px; }
+    .stat {
+      min-width: 0; padding: 12px 14px; border: 1px solid #efd99e; border-radius: 15px;
+      background: linear-gradient(135deg, rgba(255,251,232,.98), rgba(255,239,203,.96));
+      box-shadow: 0 6px 16px rgba(78,57,33,.09);
+    }
+    .stat:nth-child(1) { border-left: 4px solid #d93631; }
+    .stat-value { font-size: 20px; font-weight: 850; letter-spacing: -.7px; }
+    .stat-label { margin-top: 2px; color: var(--muted); font-size: 9px; font-weight: 750; letter-spacing: .7px; text-transform: uppercase; }
+
+    .layout {
+      display: grid; flex: 1 1 auto; min-height: 0;
+      grid-template-columns: minmax(130px, .72fr) minmax(300px, 2fr) minmax(150px, .82fr);
+      gap: 13px; align-items: stretch;
+    }
+    .card { border: 1px solid rgba(255, 222, 145, .9); border-radius: 20px; background: rgba(255, 250, 232, .96); box-shadow: var(--shadow); }
+    .details-card {
+      display: flex; min-height: 0; flex-direction: column; justify-content: center; gap: 18px;
+      padding: 20px 15px; background: linear-gradient(160deg, rgba(255,251,230,.97), rgba(255,226,177,.94));
+    }
+    .intro { display: flex; flex: 0 0 auto; flex-direction: column; gap: 10px; }
+    .eyebrow { margin: 0 0 6px; color: #bb302f; font-size: 9px; font-weight: 850; letter-spacing: 1.5px; text-transform: uppercase; }
+    h1 { margin: 0; font-size: clamp(22px, 2.2vw, 30px); line-height: 1.02; letter-spacing: -1.5px; }
+    .intro-copy { margin: 0; color: #77798d; font-size: 11px; line-height: 1.5; }
+    .spinner-card {
+      display: flex; min-width: 0; min-height: 0; flex-direction: column;
+      padding: 14px 18px 10px; overflow: hidden;
+      background: linear-gradient(150deg, rgba(255,253,241,.98), rgba(255,239,205,.96));
+    }
+    .card-heading { display: flex; flex: 0 0 auto; justify-content: space-between; align-items: start; gap: 10px; }
+    .card-heading h2 { margin: 0; font-size: 14px; letter-spacing: -.3px; }
+    .card-heading p { margin: 4px 0 0; color: var(--muted); font-size: 11px; }
+    .remaining-pill {
+      padding: 7px 10px; border-radius: 999px; background: #ffe2a1;
+      color: var(--purple-dark); font-size: 11px; font-weight: 800; white-space: nowrap;
+    }
+    .wheel-stage {
+      position: relative; display: grid; width: min(100%, calc(100dvh - 170px), 620px);
+      height: auto; flex: 0 1 auto; min-height: 0; max-height: calc(100dvh - 170px); aspect-ratio: 1;
+      margin: auto; place-items: center;
+    }
+    .wheel-glow { position: absolute; width: 82%; height: 82%; border-radius: 50%; background: #ffd967; filter: blur(38px); opacity: .48; }
+    .wheel {
+      position: absolute; z-index: 1; inset: 0; width: 100%; height: 100%; max-width: 100%; max-height: 100%; overflow: visible;
+      filter: drop-shadow(0 12px 16px rgba(89, 58, 79, .21));
+    }
+    .wheel-rotor { transform-origin: 200px 200px; }
+    .wheel-segment { stroke: #fff; stroke-width: 1.25; }
+    .wheel-label {
+      fill: #fff9e9; font-size: 9px; font-weight: 850; text-anchor: middle;
+      dominant-baseline: middle; opacity: 1; paint-order: stroke; stroke: rgba(19, 44, 66, .58); stroke-width: 1.1px; stroke-linejoin: round;
+    }
+    .wheel-rim { fill: none; stroke: #fff; stroke-width: 5; }
+    .wheel-pointer {
+      position: absolute; z-index: 3; top: -2px; left: 50%; width: 0; height: 0;
+      border-right: 11px solid transparent; border-bottom: 0; border-left: 11px solid transparent;
+      border-top: 24px solid #e43b30; transform: translateX(-50%);
+      filter: drop-shadow(0 3px 2px rgba(0,0,0,.15));
+    }
+    .wheel-hub {
+      position: absolute; z-index: 2; display: grid; width: 132px; height: 132px;
+      padding: 13px; place-items: center; align-content: center; border: 7px solid white;
+      border-radius: 50%; background: linear-gradient(145deg, #17486c, #102d49); box-shadow: 0 0 0 3px #efb83b, 0 7px 22px rgba(13,43,69,.34);
+      color: white; text-align: center;
+    }
+    .hub-kicker { color: #aeb4ca; font-size: 9px; font-weight: 800; letter-spacing: 1.5px; text-transform: uppercase; }
+    .hub-result { min-height: 38px; margin: 5px 0 2px; color: var(--lime); font-family: "SFMono-Regular", Consolas, monospace; font-size: clamp(17px, 2.4vw, 27px); font-weight: 800; letter-spacing: -1.3px; }
+    .hub-description { color: #c7cada; font-size: 9px; line-height: 1.2; }
+
+    .controls { display: flex; flex: 0 0 auto; justify-content: center; align-items: center; gap: 9px; margin-top: 2px; }
+    .roll-button, .reset-button {
+      min-height: 42px; border: 0; border-radius: 12px; cursor: pointer;
+      transition: transform .15s ease, box-shadow .15s ease, background .15s ease;
+    }
+    .roll-button {
+      min-width: 158px; padding: 0 18px; background: linear-gradient(120deg, #cf282b, #ed563b); color: #fff9e9;
+      box-shadow: 0 6px 14px rgba(148, 34, 29, .28); font-size: 12px; font-weight: 800;
+    }
+    .roll-button:hover:not(:disabled) { transform: translateY(-2px); background: linear-gradient(120deg, #af2026, #d93631); box-shadow: 0 10px 20px rgba(148, 34, 29, .34); }
+    .roll-button:disabled { cursor: not-allowed; opacity: .55; box-shadow: none; }
+    .reset-button { padding: 0 16px; border: 1px solid #ead49f; background: #fff9e9; color: #536679; font-size: 12px; font-weight: 750; }
+    .reset-button:hover { transform: translateY(-1px); background: #ffefc5; }
+    button:focus-visible, input:focus-visible { outline: 3px solid rgba(111,91,234,.35); outline-offset: 3px; }
+    .roll-hint { flex: 0 0 auto; margin-top: 7px; color: #979baa; font-size: 9px; text-align: center; }
+
+    .history-card {
+      display: flex; min-width: 0; min-height: 0; flex-direction: column; padding: 17px 14px 14px;
+      background: linear-gradient(160deg, rgba(255,253,238,.97), rgba(225,242,233,.96));
+    }
+    .history-heading { display: flex; align-items: center; justify-content: space-between; padding-bottom: 12px; border-bottom: 1px solid var(--line); }
+    .history-heading h2 { margin: 0; font-size: 14px; letter-spacing: -.3px; }
+    .history-close { width: 27px; height: 27px; place-items: center; border: 0; border-radius: 8px; background: #f3f0fc; color: var(--purple-dark); cursor: pointer; font-size: 17px; }
+    .history-count { display: grid; width: 27px; height: 27px; place-items: center; border-radius: 9px; background: #f1efff; color: var(--purple-dark); font-size: 11px; font-weight: 800; }
+    .history-list { display: flex; flex: 1; min-height: 0; flex-direction: column; gap: 7px; margin: 11px -5px 0 0; padding: 0 5px 0 0; overflow: auto; scrollbar-color: #d8d5e9 transparent; scrollbar-width: thin; }
+    .history-empty { display: grid; flex: 1; min-height: 0; place-items: center; align-content: center; color: #989cad; text-align: center; }
+    .empty-icon { display: grid; width: 48px; height: 48px; margin-bottom: 12px; place-items: center; border-radius: 16px; background: #ffedba; color: #c32e2c; font-size: 21px; }
+    .history-empty strong { color: #6f7485; font-size: 12px; }
+    .history-empty span { max-width: 170px; margin-top: 5px; font-size: 11px; line-height: 1.5; }
+    .history-item { display: flex; align-items: center; gap: 11px; padding: 8px 10px; border: 1px solid #f0eff4; border-radius: 12px; animation: slide-in .25s ease both; }
+    .history-order { display: grid; width: 28px; height: 28px; flex: 0 0 28px; place-items: center; border-radius: 9px; background: #f5f4fa; color: #85899a; font-size: 10px; font-weight: 800; }
+    .history-expression { color: var(--ink); font-family: "SFMono-Regular", Consolas, monospace; font-size: 16px; font-weight: 800; letter-spacing: -.6px; }
+    .history-name { margin-top: 2px; color: var(--muted); font-size: 10px; }
+    .history-item:first-child { border-color: #edc45f; background: #fff5d5; }
+    .history-item:first-child .history-order { background: #d93631; color: white; }
+    .history-footer { display: flex; flex: 0 0 auto; align-items: center; gap: 7px; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--line); color: #808596; font-size: 9px; }
+    .history-footer i { width: 7px; height: 7px; border-radius: 50%; background: #70b58f; }
+
+    .catalog-dialog {
+      width: min(760px, calc(100vw - 32px)); max-width: none; max-height: min(86dvh, 760px);
+      padding: 22px; border: 1px solid #e9e6ed; border-radius: 22px; background: #fff;
+      color: var(--ink); box-shadow: 0 24px 80px rgba(31, 29, 54, .2);
+    }
+    .catalog-dialog[open] { display: flex; flex-direction: column; }
+    .catalog-dialog::backdrop { background: rgba(36, 35, 52, .35); backdrop-filter: blur(4px); }
+    .catalog-top { display: flex; align-items: center; justify-content: space-between; gap: 15px; margin-bottom: 18px; }
+    .catalog-top h2 { margin: 0; font-size: 15px; letter-spacing: -.3px; }
+    .catalog-top p { margin: 5px 0 0; color: var(--muted); font-size: 11px; }
+    .catalog-actions { display: flex; align-items: center; gap: 9px; }
+    .catalog-button, .dialog-close {
+      min-height: 36px; padding: 0 13px; border: 1px solid #e5e1f0; border-radius: 11px;
+      background: #fff; color: var(--purple-dark); cursor: pointer; font-size: 11px; font-weight: 800;
+      transition: background .15s ease, transform .15s ease;
+    }
+    .catalog-button { background: #f3f0fc; }
+    .catalog-button:hover, .dialog-close:hover { transform: translateY(-1px); background: #ebe6fa; }
+    .dialog-close { padding: 0 11px; font-size: 17px; }
+    .search-wrap { position: relative; width: min(100%, 225px); }
+    .search-wrap span { position: absolute; top: 50%; left: 12px; color: #969aac; font-size: 14px; transform: translateY(-50%); }
+    .search { width: 100%; height: 37px; padding: 0 12px 0 34px; border: 1px solid var(--line); border-radius: 11px; background: #fcfcfd; color: var(--ink); font-size: 11px; }
+    .catalog-grid { display: grid; min-height: 0; flex: 1 1 auto; grid-template-columns: repeat(5, minmax(0, 1fr)); align-content: start; gap: 8px; overflow: auto; }
+    .catalog-item { display: flex; min-width: 0; min-height: 54px; align-items: center; gap: 9px; padding: 8px 10px; border: 1px solid #efeff3; border-radius: 12px; transition: background .15s ease, border-color .15s ease; }
+    .catalog-item.called { border-color: #e4e0ff; background: #f6f4ff; }
+    .catalog-number { color: #a1a4b1; font-size: 9px; font-weight: 800; }
+    .catalog-symbol { overflow: hidden; color: #343849; font-family: "SFMono-Regular", Consolas, monospace; font-size: 13px; font-weight: 800; text-overflow: ellipsis; white-space: nowrap; }
+    .catalog-item.called .catalog-symbol { color: var(--purple-dark); }
+    .catalog-empty { grid-column: 1 / -1; padding: 24px; color: var(--muted); font-size: 12px; text-align: center; }
+    .footer { display: flex; flex: 0 0 auto; justify-content: space-between; gap: 16px; color: #999cab; font-size: 9px; }
+    .footer strong { color: #727789; }
+    .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+
+    @keyframes slide-in { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: translateY(0); } }
+    @media (max-width: 850px) {
+      .page { padding-right: 16px; padding-left: 16px; }
+      .layout { grid-template-columns: 108px minmax(0, 1fr) 126px; gap: 9px; }
+      .details-card { padding-right: 11px; padding-left: 11px; }
+      .stat { padding: 8px 7px; }
+      .stat-value { font-size: 17px; letter-spacing: -.8px; }
+      .stat-label { font-size: 8px; }
+      .spinner-card { padding-right: 17px; padding-left: 17px; }
+      .catalog-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    }
+    @media (max-width: 680px) {
+      .page { gap: 9px; padding: 12px 14px 9px; }
+      .layout { grid-template-columns: minmax(105px, .68fr) minmax(250px, 2fr) minmax(120px, .8fr); gap: 7px; }
+      .details-card { padding-right: 8px; padding-left: 8px; }
+      .intro-copy { font-size: 10px; }
+      .stat { padding: 9px 9px; }
+      .stat-value { font-size: 17px; }
+      .history-card { padding: 13px 9px 11px; }
+      .history-footer { font-size: 8px; }
+    }
+    @media (max-width: 680px) {
+      .history-card { display: none; }
+      .history-toggle { display: inline-flex; align-items: center; }
+      .history-close { display: grid; }
+      .layout { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr); gap: 8px; }
+      .details-card { flex-direction: row; align-items: center; justify-content: space-between; gap: 9px; padding: 7px 9px; }
+      .intro { flex: 0 0 auto; gap: 4px; }
+      .eyebrow { margin-bottom: 3px; font-size: 7px; letter-spacing: 1px; }
+      h1 { font-size: 17px; line-height: 1; letter-spacing: -.7px; }
+      .intro-copy { display: none; }
+      .stats { display: flex; flex: 1 1 auto; gap: 5px; }
+      .stat { flex: 1 1 0; padding: 5px 6px; border-radius: 10px; }
+      .stat-value { font-size: 14px; }
+      .stat-label { font-size: 7px; letter-spacing: .15px; }
+      .spinner-card { padding: 11px 10px 9px; }
+      .card-heading h2 { font-size: 12px; }
+      .card-heading p { font-size: 9px; }
+      .remaining-pill { padding: 5px 7px; font-size: 9px; }
+      .wheel-stage { width: min(100%, calc(100dvh - 190px), 620px); max-height: calc(100dvh - 190px); }
+      .wheel-hub { width: 104px; height: 104px; }
+      .controls { gap: 6px; }
+      .roll-button { min-width: 138px; padding: 0 12px; }
+      .reset-button { padding: 0 10px; font-size: 10px; }
+      body.history-open::before {
+        position: fixed; z-index: 11; inset: 0; background: rgba(36, 35, 52, .35);
+        backdrop-filter: blur(4px); content: "";
+      }
+      .history-card.is-open {
+        position: fixed; z-index: 12; top: 50%; right: auto; bottom: auto; left: 50%;
+        display: flex; width: min(360px, calc(100vw - 28px)); height: min(65dvh, 420px);
+        padding: 18px; transform: translate(-50%, -50%);
+      }
+    }
+    @media (max-width: 420px) {
+      .brand-sub { font-size: 9px; }
+      .topbar { gap: 8px; }
+      .top-actions { gap: 5px; }
+      .catalog-button, .history-toggle { padding-right: 8px; padding-left: 8px; font-size: 9px; }
+      .page { padding-right: 9px; padding-left: 9px; }
+      .history-card { padding: 11px 7px; }
+      .history-empty span { max-width: 120px; }
+      .history-heading h2 { font-size: 12px; }
+      .footer { font-size: 8px; }
+      .catalog-dialog { padding: 16px; }
+      .catalog-top { align-items: stretch; flex-direction: column; }
+      .search-wrap { width: 100%; }
+      .catalog-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+    @media (max-height: 620px) {
+      .page { gap: 7px; padding-top: 8px; padding-bottom: 6px; }
+      .brand-mark { width: 34px; height: 34px; }
+      .stat { padding-top: 5px; padding-bottom: 5px; }
+      .spinner-card { padding-top: 10px; padding-bottom: 8px; }
+      .wheel-stage { width: min(100%, calc(100dvh - 155px), 620px); max-height: calc(100dvh - 155px); }
+      .history-card { padding-top: 11px; padding-bottom: 9px; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+      #wheel-rotor { transition-duration: 3s !important; }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <header class="topbar">
+      <div class="brand" aria-label="BINGO.exe">
+        <div class="brand-mark" aria-hidden="true">B!</div>
+        <div>
+          <div class="brand-name">BINGO.exe</div>
+        </div>
+      </div>
+      <div class="top-actions">
+        <button class="catalog-button" id="catalog-button" type="button" aria-haspopup="dialog" aria-controls="catalog-dialog">Inside the wheel</button>
+        <button class="catalog-button history-toggle" id="history-toggle" type="button" aria-controls="history-card" aria-expanded="false">History</button>
+      </div>
+    </header>
+
+    <section class="layout" aria-label="Bingo draw">
+      <aside class="card details-card" aria-label="Game details and progress">
+        <section class="intro" aria-labelledby="page-title">
+          <div>
+            <p class="eyebrow">A little luck. A lot of logic.</p>
+            <h1 id="page-title">Spin up some<br>syntax.</h1>
+          </div>
+          <p class="intro-copy">A bingo-style random draw for the building blocks of code. Spin the wheel, call out the operator, and see what comes up next.</p>
+        </section>
+        <section class="stats" aria-label="Game progress">
+          <div class="stat"><div class="stat-value" id="called-stat">0 / 24</div><div class="stat-label">Called so far</div></div>
+        </section>
+      </aside>
+
+      <div class="card spinner-card">
+        <div class="card-heading">
+          <div><h2>The syntax spinner</h2></div>
+          <div class="remaining-pill" id="remaining-pill">24 remaining</div>
+        </div>
+        <div class="wheel-stage">
+          <div class="wheel-glow" aria-hidden="true"></div>
+          <div class="wheel-pointer" aria-hidden="true"></div>
+          <svg class="wheel" viewBox="0 0 400 400" role="img" aria-label="Spinner wheel with the 24 calls from the bingo card">
+            <g class="wheel-rotor" id="wheel-rotor"></g>
+            <circle class="wheel-rim" cx="200" cy="200" r="194"></circle>
+          </svg>
+          <div class="wheel-hub" aria-live="polite" aria-atomic="true">
+            <span class="hub-kicker" id="hub-kicker">up next</span>
+            <strong class="hub-result" id="hub-result">?</strong>
+            <span class="hub-description" id="hub-description">Press roll to begin</span>
+          </div>
+        </div>
+        <div class="controls">
+          <button class="roll-button" id="roll-button" type="button">↻ &nbsp; Roll the wheel</button>
+          <button class="reset-button" id="reset-button" type="button">Reset round</button>
+        </div>
+      </div>
+
+      <aside class="card history-card" id="history-card" aria-labelledby="history-title">
+        <div class="history-heading">
+          <h2 id="history-title">Roll history</h2>
+          <div class="catalog-actions">
+            <span class="history-count" id="history-count">0</span>
+            <button class="history-close" id="history-close" type="button" aria-label="Close roll history">×</button>
+          </div>
+        </div>
+        <div class="history-list" id="history-list" aria-live="polite">
+          <div class="history-empty">
+            <div class="empty-icon" aria-hidden="true">↻</div>
+            <strong>Your calls will show up here</strong>
+            <span>Give the wheel a spin to start your round.</span>
+          </div>
+        </div>
+        <div class="history-footer"><i aria-hidden="true"></i><span>Latest roll appears at the top</span></div>
+      </aside>
+    </section>
+
+    <dialog class="catalog-dialog" id="catalog-dialog" aria-labelledby="catalog-title">
+      <div class="catalog-top">
+        <div><h2 id="catalog-title">Inside the wheel</h2><p>Browse the 24 calls from your bingo card.</p></div>
+        <div class="catalog-actions">
+          <label class="search-wrap">
+            <span aria-hidden="true">⌕</span>
+            <input class="search" id="search" type="search" placeholder="Find a symbol..." autocomplete="off" aria-label="Find a symbol">
+          </label>
+          <button class="dialog-close" id="catalog-close" type="button" aria-label="Close symbol list">×</button>
+        </div>
+      </div>
+      <div class="catalog-grid" id="catalog-grid"></div>
+    </dialog>
+
+    <div class="sr-only" id="announcement" role="status" aria-live="assertive"></div>
+  </main>
+
+  <script>
+    const entries = [
+      [";", "Semicolon"], ["_", "Underscore"], ["$", "Dollar sign"], ["!!", "Double negation"], ["&", "Ampersand"],
+      ["()", "Parentheses"], ["/", "Forward slash"], ["{", "Opening brace"], ["+", "Plus operator"], [">", "Greater-than operator"],
+      ["*", "Asterisk"], ["[", "Opening bracket"], ["\\", "Backslash"], ["else", "Else statement"],
+      ["while", "While loop"], ["return", "Return statement"], ["o", "Letter O"], ["&&", "Logical AND operator"], ["#", "Hash"],
+      ["array", "Array"], ["if", "If statement"], ["DOCTYPE", "Document Type Declaration"], ["=", "Assignment operator"], ["!", "Logical NOT operator"]
+    ].map(([symbol, name], index) => ({ id: index + 1, symbol, name }));
+
+    const total = entries.length;
+    const wheelColors = ["#8977c8", "#d6818b", "#c9924b", "#559e8e", "#558eb2", "#929044"];
+    if (total !== 24 || new Set(entries.map(entry => entry.symbol)).size !== total) {
+      throw new Error("The bingo wheel must contain the 24 unique calls from the bingo card.");
+    }
+    const rotor = document.getElementById("wheel-rotor");
+    const rollButton = document.getElementById("roll-button");
+    const resetButton = document.getElementById("reset-button");
+    const catalogGrid = document.getElementById("catalog-grid");
+    const historyList = document.getElementById("history-list");
+    const search = document.getElementById("search");
+    const catalogDialog = document.getElementById("catalog-dialog");
+    const catalogButton = document.getElementById("catalog-button");
+    const catalogClose = document.getElementById("catalog-close");
+    const historyToggle = document.getElementById("history-toggle");
+    const historyCard = document.getElementById("history-card");
+    const historyClose = document.getElementById("history-close");
+    const called = new Set();
+    let history = [];
+    let drawOrder;
+    let currentRotation = 0;
+    let spinning = false;
+    let spinFallback;
+
+    function randomIndex(length) {
+      if (typeof window.crypto?.getRandomValues !== "function") {
+        throw new Error("A secure random number generator is not available in this browser.");
+      }
+      const range = 0x100000000;
+      const limit = range - (range % length);
+      const value = new Uint32Array(1);
+      do {
+        window.crypto.getRandomValues(value);
+      } while (value[0] >= limit);
+      return value[0] % length;
+    }
+
+    function shuffleEntries() {
+      const shuffled = [...entries];
+      for (let index = shuffled.length - 1; index > 0; index--) {
+        const swapIndex = randomIndex(index + 1);
+        [shuffled[index], shuffled[swapIndex]] = [shuffled[swapIndex], shuffled[index]];
+      }
+      return shuffled;
+    }
+
+    function pointOnWheel(radius, angle) {
+      const radians = angle * Math.PI / 180;
+      return { x: 200 + radius * Math.cos(radians), y: 200 + radius * Math.sin(radians) };
+    }
+
+    function drawWheel() {
+      const step = 360 / total;
+      rotor.replaceChildren();
+      entries.forEach((entry, index) => {
+        const startAngle = -90 + index * step;
+        const endAngle = startAngle + step;
+        const start = pointOnWheel(190, startAngle);
+        const end = pointOnWheel(190, endAngle);
+        const largeArc = step > 180 ? 1 : 0;
+        const color = wheelColors[index % wheelColors.length];
+        const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+        path.setAttribute("class", "wheel-segment");
+        path.setAttribute("d", `M 200 200 L ${start.x} ${start.y} A 190 190 0 ${largeArc} 1 ${end.x} ${end.y} Z`);
+        path.setAttribute("fill", color);
+        path.dataset.entry = String(entry.id);
+        rotor.append(path);
+
+        const labelPoint = pointOnWheel(166, startAngle + step / 2);
+        const label = document.createElementNS("http://www.w3.org/2000/svg", "text");
+        label.setAttribute("class", "wheel-label");
+        label.setAttribute("x", String(labelPoint.x));
+        label.setAttribute("y", String(labelPoint.y));
+        label.setAttribute("textLength", String(Math.min(entry.symbol.length * 7, 52)));
+        label.setAttribute("lengthAdjust", "spacingAndGlyphs");
+        label.textContent = entry.symbol;
+        rotor.append(label);
+      });
+      updateWheelAvailability();
+    }
+
+    function renderCatalog(query = "") {
+      const normalized = query.trim().toLowerCase();
+      const matches = entries.filter(entry =>
+        entry.symbol.toLowerCase().includes(normalized) ||
+        entry.name.toLowerCase().includes(normalized) ||
+        String(entry.id).includes(normalized)
+      );
+      catalogGrid.replaceChildren();
+      if (matches.length === 0) {
+        const empty = document.createElement("div");
+        empty.className = "catalog-empty";
+        empty.textContent = "No symbols match that search.";
+        catalogGrid.append(empty);
+        return;
+      }
+      matches.forEach(entry => {
+        const item = document.createElement("div");
+        item.className = `catalog-item${called.has(entry.id) ? " called" : ""}`;
+        item.dataset.entry = String(entry.id);
+        item.title = `${entry.name}${called.has(entry.id) ? " · called" : ""}`;
+        const number = document.createElement("span");
+        number.className = "catalog-number";
+        number.textContent = String(entry.id).padStart(2, "0");
+        const symbol = document.createElement("span");
+        symbol.className = "catalog-symbol";
+        symbol.textContent = entry.symbol;
+        item.append(number, symbol);
+        catalogGrid.append(item);
+      });
+    }
+
+    function renderHistory() {
+      document.getElementById("history-count").textContent = String(history.length);
+      historyList.replaceChildren();
+      if (history.length === 0) {
+        const empty = document.createElement("div");
+        empty.className = "history-empty";
+        const icon = document.createElement("div");
+        icon.className = "empty-icon";
+        icon.setAttribute("aria-hidden", "true");
+        icon.textContent = "↻";
+        const title = document.createElement("strong");
+        title.textContent = "Your calls will show up here";
+        const description = document.createElement("span");
+        description.textContent = "Give the wheel a spin to start your round.";
+        empty.append(icon, title, description);
+        historyList.append(empty);
+        return;
+      }
+      history.forEach((entry, index) => {
+        const item = document.createElement("div");
+        item.className = "history-item";
+        const order = document.createElement("span");
+        order.className = "history-order";
+        order.textContent = String(history.length - index).padStart(2, "0");
+        const details = document.createElement("div");
+        const expression = document.createElement("div");
+        expression.className = "history-expression";
+        expression.textContent = entry.symbol;
+        const name = document.createElement("div");
+        name.className = "history-name";
+        name.textContent = entry.name;
+        details.append(expression, name);
+        item.append(order, details);
+        historyList.append(item);
+      });
+    }
+
+    function updateWheelAvailability() {
+      rotor.querySelectorAll(".wheel-segment").forEach(segment => {
+        const isCalled = called.has(Number(segment.dataset.entry));
+        segment.setAttribute("fill", isCalled ? "#d8d5e0" : wheelColors[(Number(segment.dataset.entry) - 1) % wheelColors.length]);
+      });
+    }
+
+    function updateProgress() {
+      const remaining = total - called.size;
+      document.getElementById("called-stat").textContent = `${called.size} / ${total}`;
+      document.getElementById("remaining-pill").textContent = `${remaining} remaining`;
+      rollButton.disabled = spinning || remaining === 0;
+      rollButton.textContent = remaining === 0 ? "Round complete" : spinning ? "Spinning..." : "↻   Roll the wheel";
+    }
+
+    function roll() {
+      if (spinning || called.size === total) return;
+      const selected = drawOrder[called.size];
+      const segmentIndex = selected.id - 1;
+      const step = 360 / total;
+      const desiredAngle = (360 - ((segmentIndex + 0.5) * step % 360)) % 360;
+      const normalizedCurrent = ((currentRotation % 360) + 360) % 360;
+      const alignment = (desiredAngle - normalizedCurrent + 360) % 360;
+      const targetRotation = currentRotation + 360 * 5 + alignment;
+
+      spinning = true;
+      updateProgress();
+      rotor.style.transition = "transform 3s cubic-bezier(.12,.78,.18,1)";
+      rotor.style.transform = `rotate(${targetRotation}deg)`;
+
+      let finished = false;
+      const finish = () => {
+        if (finished) return;
+        finished = true;
+        rotor.removeEventListener("transitionend", finish);
+        window.clearTimeout(spinFallback);
+        currentRotation = targetRotation;
+        called.add(selected.id);
+        history.unshift(selected);
+        spinning = false;
+        document.getElementById("hub-kicker").textContent = "just called";
+        document.getElementById("hub-result").textContent = selected.symbol;
+        document.getElementById("hub-description").textContent = selected.name;
+        document.getElementById("announcement").textContent = `Call ${selected.id}: ${selected.symbol}, ${selected.name}`;
+        renderHistory();
+        renderCatalog(search.value);
+        updateWheelAvailability();
+        updateProgress();
+      };
+      rotor.addEventListener("transitionend", finish, { once: true });
+      spinFallback = window.setTimeout(finish, 3500);
+    }
+
+    function resetRound() {
+      if (spinning) return;
+      const nextDrawOrder = shuffleEntries();
+      called.clear();
+      history = [];
+      drawOrder = nextDrawOrder;
+      document.getElementById("hub-kicker").textContent = "up next";
+      document.getElementById("hub-result").textContent = "?";
+      document.getElementById("hub-description").textContent = "Press roll to begin";
+      document.getElementById("announcement").textContent = "Round reset. All 24 calls are back in the wheel.";
+      renderHistory();
+      renderCatalog(search.value);
+      updateWheelAvailability();
+      updateProgress();
+    }
+
+    rollButton.addEventListener("click", roll);
+    resetButton.addEventListener("click", resetRound);
+    search.addEventListener("input", () => renderCatalog(search.value));
+    catalogButton.addEventListener("click", () => {
+      renderCatalog(search.value);
+      catalogDialog.showModal();
+      search.focus();
+    });
+    catalogClose.addEventListener("click", () => catalogDialog.close());
+    historyToggle.addEventListener("click", () => {
+      const isOpen = historyCard.classList.toggle("is-open");
+      document.body.classList.toggle("history-open", isOpen);
+      historyToggle.setAttribute("aria-expanded", String(isOpen));
+    });
+    historyClose.addEventListener("click", () => {
+      historyCard.classList.remove("is-open");
+      document.body.classList.remove("history-open");
+      historyToggle.setAttribute("aria-expanded", "false");
+      historyToggle.focus();
+    });
+
+    drawOrder = shuffleEntries();
+    drawWheel();
+    renderCatalog();
+    renderHistory();
+    updateProgress();
+  </script>
+</body>
+</html>
